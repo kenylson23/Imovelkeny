@@ -1,6 +1,6 @@
 [build]
   publish = "dist/public"
-  command = "npm install && npx vite build --mode production"
+  command = "npm install && npx vite build"
 
 [build.environment]
   NODE_VERSION = "20"
