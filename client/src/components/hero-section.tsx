@@ -2,16 +2,23 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertLeadSchema } from "@shared/schema";
-import type { InsertLead } from "@shared/schema";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle, Lock } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { storage } from "@/lib/storage";
+import type { InsertLead } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
+
+const insertLeadSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório"),
+  email: z.string().email("Email inválido"),
+  phone: z.string().min(1, "Telefone é obrigatório"),
+  propertyType: z.string().min(1, "Tipo de imóvel é obrigatório"),
+});
 
 export default function HeroSection() {
   const { toast } = useToast();
@@ -29,8 +36,7 @@ export default function HeroSection() {
 
   const leadMutation = useMutation({
     mutationFn: async (data: InsertLead) => {
-      const response = await apiRequest("POST", "/api/leads", data);
-      return response.json();
+      return await storage.createLead(data);
     },
     onSuccess: () => {
       toast({
@@ -38,6 +44,7 @@ export default function HeroSection() {
         description: "Você receberá nossas ofertas exclusivas em breve.",
       });
       form.reset();
+      setPropertyType("Apartamento");
     },
     onError: (error) => {
       toast({

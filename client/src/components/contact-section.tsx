@@ -2,8 +2,7 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertConsultationSchema } from "@shared/schema";
-import type { InsertConsultation } from "@shared/schema";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,8 +10,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Phone, Mail, MapPin, Clock, MessageCircle } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { storage } from "@/lib/storage";
+import type { InsertConsultation } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
+
+const insertConsultationSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório"),
+  email: z.string().email("Email inválido"),
+  phone: z.string().min(1, "Telefone é obrigatório"),
+  objective: z.string().min(1, "Objetivo é obrigatório"),
+  message: z.string().optional(),
+});
 
 export default function ContactSection() {
   const { toast } = useToast();
@@ -31,8 +39,10 @@ export default function ContactSection() {
 
   const consultationMutation = useMutation({
     mutationFn: async (data: InsertConsultation) => {
-      const response = await apiRequest("POST", "/api/consultations", data);
-      return response.json();
+      return await storage.createConsultation({
+        ...data,
+        message: data.message || null
+      });
     },
     onSuccess: () => {
       toast({
@@ -40,6 +50,7 @@ export default function ContactSection() {
         description: "Entraremos em contato em até 24 horas.",
       });
       form.reset();
+      setObjective("Comprar Imóvel");
     },
     onError: (error) => {
       toast({
